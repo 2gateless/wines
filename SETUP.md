@@ -120,6 +120,44 @@ service cloud.firestore {
 }
 ```
 
+## 현재 설치 진행 상황 (2026-04-28 기준)
+
+### 완료된 작업
+
+- **puro** (Flutter 버전 관리자) winget으로 설치
+  - 실행파일: `C:\Users\USER\AppData\Local\Microsoft\WinGet\Packages\pingbird.Puro_Microsoft.Winget.Source_8wekyb3d8bbwe\puro.exe`
+- **Flutter 3.41.8** stable 설치: `C:\Users\USER\.puro\envs\stable\flutter\`
+- PATH에 추가됨: `C:\Users\USER\.puro\bin`, `C:\Users\USER\.puro\envs\stable\flutter\bin`
+- 환경변수 `FLUTTER_ROOT=C:\Users\USER\.puro\envs\stable\flutter` 설정
+- `flutter doctor` — 정상 작동 확인 (Chrome/Edge 웹 실행 가능)
+- 코드 수정 완료:
+  - `dart:io` (File) → `dart:typed_data` (Uint8List) 전체 교체 (웹 호환)
+  - `Content.user()` → `Content.text()` API 수정 (google_generative_ai 0.4.7)
+
+### 막힌 문제
+
+`flutter run -d chrome` 실행 시 아래 오류:
+
+```
+Error: SDK root directory not found: ../../../.puro/envs/stable/flutter/bin/cache/flutter_web_sdk/.
+```
+
+- `flutter_web_sdk` 폴더는 실제로 존재함
+- puro를 우회해서 dart 직접 실행해도 동일 오류
+- flutter_tools가 web SDK를 상대 경로로 계산할 때 경로가 틀어지는 것으로 추정
+
+### 다음 시도할 것
+
+**가장 확실한 해결책: Flutter를 puro 없이 직접 재설치**
+
+1. [https://docs.flutter.dev/get-started/install/windows](https://docs.flutter.dev/get-started/install/windows) 접속
+2. Flutter SDK zip 다운로드 → `C:\flutter`에 압축 해제
+3. 사용자 환경변수 PATH에 `C:\flutter\bin` 추가
+4. 기존 puro PATH 항목 제거 (혼선 방지)
+5. 새 터미널에서 `flutter doctor` → `flutter run -d chrome`
+
+---
+
 ## 프로젝트 구조
 
 ```
