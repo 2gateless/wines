@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart'
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) throw UnsupportedError('Web is not supported.');
+    if (kIsWeb) return web;
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
@@ -22,6 +22,16 @@ class DefaultFirebaseOptions {
             'Unsupported platform: $defaultTargetPlatform');
     }
   }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyAXfpkFcFH-HXOGqNEmMiUeV4SIMCWOiDE',
+    appId: '1:739128263714:web:a1547555fed9a5d632b67b',
+    messagingSenderId: '739128263714',
+    projectId: 'wines-96a55',
+    storageBucket: 'wines-96a55.firebasestorage.app',
+    authDomain: 'wines-96a55.firebaseapp.com',
+    measurementId: 'G-RSDSF8Q7Y5',
+  );
 
   // TODO: Replace all values below by running `flutterfire configure`
   static const FirebaseOptions android = FirebaseOptions(

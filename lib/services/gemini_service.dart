@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/wine.dart';
 
@@ -29,13 +29,11 @@ class GeminiService {
 답변은 반드시 한국어로, 친근하고 간결하게(200자 이내) 작성합니다.
 ''';
 
-  Future<WineInfo?> analyzeLabel(File imageFile) async {
+  Future<WineInfo?> analyzeLabel(Uint8List imageBytes) async {
     final model = GenerativeModel(
       model: 'gemini-1.5-flash',
       apiKey: _kGeminiApiKey,
     );
-
-    final imageBytes = await imageFile.readAsBytes();
     const prompt = '''
 이 와인 라벨을 분석하고 아래 JSON 형식으로만 응답하세요 (코드 블록 없이 순수 JSON):
 {"name":"와인 전체 이름","origin":"원산지(국가, 지역)","grape":"포도 품종","characteristics":"특징(한 문장, 한국어)","foodPairing":["음식1","음식2","음식3"]}
@@ -72,9 +70,8 @@ class GeminiService {
 
     final historyContext = _buildHistory(wineHistory);
     final session = model.startChat(history: [
-      Content.user(historyContext),
-      Content.model(
-          '네! 기록을 확인했어요 🍷 취향을 파악했으니 언제든 추천 요청해주세요.'),
+      Content.text(historyContext),
+      Content.model([TextPart('네! 기록을 확인했어요 🍷 취향을 파악했으니 언제든 추천 요청해주세요.')]),
     ]);
 
     return SommelierChat(session);

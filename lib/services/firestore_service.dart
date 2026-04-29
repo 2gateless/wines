@@ -1,17 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/wine.dart';
 
 class FirestoreService {
-  static final _db = FirebaseFirestore.instance;
   static const _col = 'wines';
 
-  Stream<List<Wine>> watchWines() => _db
-      .collection(_col)
-      .orderBy('timestamp', descending: true)
-      .snapshots()
-      .map((s) => s.docs.map(Wine.fromFirestore).toList());
+  static bool get _ready => Firebase.apps.isNotEmpty;
+
+  FirebaseFirestore get _db => FirebaseFirestore.instance;
+
+  Stream<List<Wine>> watchWines() {
+    if (!_ready) return Stream.value([]);
+    return _db
+        .collection(_col)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((s) => s.docs.map(Wine.fromFirestore).toList());
+  }
 
   Future<List<Wine>> getWines() async {
+    if (!_ready) return [];
     final s = await _db
         .collection(_col)
         .orderBy('timestamp', descending: true)
@@ -20,10 +28,13 @@ class FirestoreService {
   }
 
   Future<String> addWine(Wine wine) async {
+    if (!_ready) return 'demo-id';
     final ref = await _db.collection(_col).add(wine.toFirestore());
     return ref.id;
   }
 
-  Future<void> deleteWine(String id) =>
-      _db.collection(_col).doc(id).delete();
+  Future<void> deleteWine(String id) async {
+    if (!_ready) return;
+    await _db.collection(_col).doc(id).delete();
+  }
 }

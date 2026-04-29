@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/wine.dart';
@@ -7,11 +7,11 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class AddWineScreen extends StatefulWidget {
-  final File imageFile;
+  final Uint8List imageBytes;
   final WineInfo wineInfo;
 
   const AddWineScreen(
-      {super.key, required this.imageFile, required this.wineInfo});
+      {super.key, required this.imageBytes, required this.wineInfo});
 
   @override
   State<AddWineScreen> createState() => _AddWineScreenState();
@@ -59,7 +59,7 @@ class _AddWineScreenState extends State<AddWineScreen> {
             // Label image preview
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(widget.imageFile,
+              child: Image.memory(widget.imageBytes,
                   height: 200, fit: BoxFit.cover, width: double.infinity),
             ),
             const SizedBox(height: 24),
@@ -136,7 +136,7 @@ class _AddWineScreenState extends State<AddWineScreen> {
 
     try {
       final imageUrl =
-          await _storage.uploadWineImage(widget.imageFile);
+          await _storage.uploadWineImage(widget.imageBytes);
 
       final wine = Wine(
         id: '',

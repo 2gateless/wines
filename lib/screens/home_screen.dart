@@ -67,13 +67,12 @@ class _GalleryTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('WINES')),
       body: StreamBuilder<List<Wine>>(
-        stream: firestoreService.watchWines(),
+        stream: firestoreService.watchWines().handleError((_) {}),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
                 child: CircularProgressIndicator(color: AppTheme.burgundy));
           }
-
           final wines = snapshot.data ?? [];
 
           if (wines.isEmpty) {

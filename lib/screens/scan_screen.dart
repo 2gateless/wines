@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/wine.dart';
@@ -14,7 +14,7 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
-  File? _image;
+  Uint8List? _imageBytes;
   WineInfo? _wineInfo;
   bool _isAnalyzing = false;
   final _gemini = GeminiService();
@@ -28,10 +28,10 @@ class _ScanScreenState extends State<ScanScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ImagePickerArea(image: _image, onPick: _pickImage),
+            _ImagePickerArea(imageBytes: _imageBytes, onPick: _pickImage),
             const SizedBox(height: 20),
 
-            if (_image != null && _wineInfo == null && !_isAnalyzing)
+            if (_imageBytes != null && _wineInfo == null && !_isAnalyzing)
               ElevatedButton.icon(
                 onPressed: _analyze,
                 icon: const Icon(Icons.auto_awesome, size: 18),
@@ -67,7 +67,7 @@ class _ScanScreenState extends State<ScanScreen> {
               OutlinedButton(
                 onPressed: () => setState(() {
                   _wineInfo = null;
-                  _image = null;
+                  _imageBytes = null;
                 }),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textSecondary,
@@ -123,17 +123,18 @@ class _ScanScreenState extends State<ScanScreen> {
         await picker.pickImage(source: source, imageQuality: 85, maxWidth: 1200);
     if (picked == null) return;
 
+    final bytes = await picked.readAsBytes();
     setState(() {
-      _image = File(picked.path);
+      _imageBytes = bytes;
       _wineInfo = null;
     });
   }
 
   Future<void> _analyze() async {
-    if (_image == null) return;
+    if (_imageBytes == null) return;
     setState(() => _isAnalyzing = true);
 
-    final info = await _gemini.analyzeLabel(_image!);
+    final info = await _gemini.analyzeLabel(_imageBytes!);
 
     setState(() {
       _wineInfo = info ?? WineInfo.empty();
@@ -148,12 +149,12 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   void _goToAdd() {
-    if (_wineInfo == null || _image == null) return;
+    if (_wineInfo == null || _imageBytes == null) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) =>
-            AddWineScreen(imageFile: _image!, wineInfo: _wineInfo!),
+            AddWineScreen(imageBytes: _imageBytes!, wineInfo: _wineInfo!),
       ),
     );
   }
@@ -162,10 +163,10 @@ class _ScanScreenState extends State<ScanScreen> {
 // ── Private widgets ────────────────────────────────────────────────────────
 
 class _ImagePickerArea extends StatelessWidget {
-  final File? image;
+  final Uint8List? imageBytes;
   final VoidCallback onPick;
 
-  const _ImagePickerArea({required this.image, required this.onPick});
+  const _ImagePickerArea({required this.imageBytes, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
@@ -178,14 +179,14 @@ class _ImagePickerArea extends StatelessWidget {
           color: AppTheme.cream,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: image != null ? AppTheme.burgundy : AppTheme.divider,
-            width: image != null ? 2 : 1,
+            color: imageBytes != null ? AppTheme.burgundy : AppTheme.divider,
+            width: imageBytes != null ? 2 : 1,
           ),
         ),
-        child: image != null
+        child: imageBytes != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(13),
-                child: Image.file(image!, fit: BoxFit.cover,
+                child: Image.memory(imageBytes!, fit: BoxFit.cover,
                     width: double.infinity),
               )
             : Column(
