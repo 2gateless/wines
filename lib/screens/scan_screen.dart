@@ -120,7 +120,12 @@ class _ScanScreenState extends State<ScanScreen> {
 
     final picker = ImagePicker();
     final picked =
-        await picker.pickImage(source: source, imageQuality: 85, maxWidth: 1200);
+        await picker.pickImage(
+          source: source,
+          imageQuality: 80, // 와인 라벨 인식에 충분한 품질
+          maxWidth: 800,    // Gemini 768px 타일 기준으로 비용 최소화
+          maxHeight: 800,   // 세로도 제한하여 타일 수 억제
+        );
     if (picked == null) return;
 
     final bytes = await picked.readAsBytes();
