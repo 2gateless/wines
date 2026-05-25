@@ -31,7 +31,7 @@ class GeminiService {
 
   Future<WineInfo?> analyzeLabel(Uint8List imageBytes) async {
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       apiKey: _kGeminiApiKey,
     );
     const prompt = '''
@@ -63,7 +63,7 @@ class GeminiService {
 
   SommelierChat startChat(List<Wine> wineHistory) {
     final model = GenerativeModel(
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.0-flash',
       apiKey: _kGeminiApiKey,
       systemInstruction: Content.system(_systemPrompt),
     );
