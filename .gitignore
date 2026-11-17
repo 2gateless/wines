@@ -1,37 +1,6 @@
-# Flutter/Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-build/
-*.iml
-
-# Android
-android/.gradle/
-android/captures/
-android/gradlew
-android/gradlew.bat
-android/local.properties
-android/**/GeneratedPluginRegistrant.java
-android/key.properties
-*.jks
-
-# iOS
-ios/.symlinks/
-ios/Flutter/flutter_export_environment.sh
-ios/Flutter/Generated.xcconfig
-ios/Pods/
-ios/Runner.xcworkspace/
-
-# macOS
-macos/.symlinks/
-macos/Flutter/ephemeral/
-
-# Firebase (auto-generated, but keeping firebase_options.dart in repo for structure)
-google-services.json
-GoogleService-Info.plist
+# Dependencies & build
+node_modules/
+dist/
 
 # Environment / secrets
 *.env
@@ -41,9 +10,6 @@ GoogleService-Info.plist
 .idea/
 .vscode/
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?
 
 # Misc

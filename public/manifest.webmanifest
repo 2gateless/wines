@@ -1,0 +1,18 @@
+{
+  "name": "WINES — 내 와인 기록",
+  "short_name": "WINES",
+  "description": "와인 라벨 사진, 맛, 음식 페어링을 기록하는 개인 와인 노트",
+  "start_url": "/wines/",
+  "scope": "/wines/",
+  "display": "standalone",
+  "background_color": "#FAF7F5",
+  "theme_color": "#722F37",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
