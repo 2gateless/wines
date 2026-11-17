@@ -24,6 +24,7 @@ interface AppState {
   isSearching: boolean;
   query: string;
   sort: WineSort;
+  viewMode: 'grid' | 'list';
   scanImage: ResizedImage | null;
   isAnalyzing: boolean;
   lightboxUrl: string | null;
@@ -37,6 +38,7 @@ const state: AppState = {
   isSearching: false,
   query: '',
   sort: 'latest',
+  viewMode: 'grid',
   scanImage: null,
   isAnalyzing: false,
   lightboxUrl: null,
@@ -152,6 +154,57 @@ function render(): void {
   }
 }
 
+function renderWineItems(wines: Wine[]): string {
+  if (state.viewMode === 'list') {
+    return `
+      <div class="wine-list">
+        ${wines
+          .map((w) => {
+            const meta = [w.origin, w.grape].filter(Boolean).join(' · ');
+            return `
+          <article class="wine-list-item" data-id="${escapeHtml(w.id)}">
+            <div class="wine-list-main">
+              <div class="wine-list-name">${escapeHtml(w.name || '(이름 없음)')}</div>
+              ${meta ? `<div class="wine-list-meta">${escapeHtml(meta)}</div>` : ''}
+            </div>
+            <div class="wine-list-right">
+              <div class="wine-card-date">${formatDateDot(w.date)}</div>
+              ${w.rating != null ? renderStars(w.rating) : ''}
+            </div>
+          </article>
+        `;
+          })
+          .join('')}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="grid">
+      ${wines
+        .map(
+          (w) => `
+        <article class="wine-card" data-id="${escapeHtml(w.id)}">
+          <div class="wine-card-img-wrap">
+            ${
+              w.imageUrl
+                ? `<img class="wine-card-img" src="${escapeHtml(w.imageUrl)}" alt="${escapeHtml(w.name)}" loading="lazy" />`
+                : `<span style="font-size:32px;opacity:0.35;">🍷</span>`
+            }
+          </div>
+          <div class="wine-card-body">
+            <div class="wine-card-name">${escapeHtml(w.name || '(이름 없음)')}</div>
+            <div class="wine-card-date">${formatDateDot(w.date)}</div>
+            ${w.rating != null ? renderStars(w.rating) : ''}
+          </div>
+        </article>
+      `,
+        )
+        .join('')}
+    </div>
+  `;
+}
+
 function renderGallery(): void {
   const wines = getFilteredWines();
 
@@ -171,30 +224,7 @@ function renderGallery(): void {
   } else if (wines.length === 0) {
     bodyHtml = `<div class="center-state"><div>검색 결과가 없습니다</div></div>`;
   } else {
-    bodyHtml = `
-      <div class="grid">
-        ${wines
-          .map(
-            (w) => `
-          <article class="wine-card" data-id="${escapeHtml(w.id)}">
-            <div class="wine-card-img-wrap">
-              ${
-                w.imageUrl
-                  ? `<img class="wine-card-img" src="${escapeHtml(w.imageUrl)}" alt="${escapeHtml(w.name)}" loading="lazy" />`
-                  : `<span style="font-size:32px;opacity:0.35;">🍷</span>`
-              }
-            </div>
-            <div class="wine-card-body">
-              <div class="wine-card-name">${escapeHtml(w.name || '(이름 없음)')}</div>
-              <div class="wine-card-date">${formatDateDot(w.date)}</div>
-              ${w.rating != null ? renderStars(w.rating) : ''}
-            </div>
-          </article>
-        `,
-          )
-          .join('')}
-      </div>
-    `;
+    bodyHtml = renderWineItems(wines);
   }
 
   appEl.innerHTML = `
@@ -203,7 +233,10 @@ function renderGallery(): void {
         ${
           state.isSearching
             ? `<input id="search-input" class="search-input" type="search" placeholder="와인명, 품종, 음식, 후기 검색..." value="${escapeHtml(state.query)}" />`
-            : `<h1 class="topbar-title">WINES</h1>`
+            : `<button id="toggle-view" class="view-toggle-btn">${
+                state.viewMode === 'grid' ? '목록으로 보기' : '사진으로 보기'
+              }</button>
+               <h1 class="topbar-title">WINES</h1>`
         }
         <button id="toggle-search" class="icon-btn" title="${state.isSearching ? '검색 닫기' : '검색'}">
           ${state.isSearching ? '✕' : '🔍'}
@@ -234,15 +267,20 @@ function renderGallery(): void {
     });
   }
 
+  document.getElementById('toggle-view')?.addEventListener('click', () => {
+    state.viewMode = state.viewMode === 'grid' ? 'list' : 'grid';
+    render();
+  });
+
   document.getElementById('toggle-search')?.addEventListener('click', () => {
     state.isSearching = !state.isSearching;
     if (!state.isSearching) state.query = '';
-  render();
+    render();
   });
 
   document.getElementById('sort-select')?.addEventListener('change', (e) => {
     state.sort = (e.target as HTMLSelectElement).value as WineSort;
-  render();
+    render();
   });
 
   document.getElementById('fab-scan')?.addEventListener('click', () => {
@@ -255,9 +293,9 @@ function renderGallery(): void {
 }
 
 function renderGalleryGridOnly(): void {
-  const gridEl = appEl.querySelector('.grid, .center-state');
+  const gridEl = appEl.querySelector('.grid, .wine-list, .center-state');
   if (!gridEl) {
-  render();
+    render();
     return;
   }
   const wines = getFilteredWines();
@@ -265,35 +303,12 @@ function renderGalleryGridOnly(): void {
     gridEl.outerHTML = `<div class="center-state"><div>검색 결과가 없습니다</div></div>`;
     return;
   }
-  gridEl.outerHTML = `
-    <div class="grid">
-      ${wines
-        .map(
-          (w) => `
-        <article class="wine-card" data-id="${escapeHtml(w.id)}">
-          <div class="wine-card-img-wrap">
-            ${
-              w.imageUrl
-                ? `<img class="wine-card-img" src="${escapeHtml(w.imageUrl)}" alt="${escapeHtml(w.name)}" loading="lazy" />`
-                : `<span style="font-size:32px;opacity:0.35;">🍷</span>`
-            }
-          </div>
-          <div class="wine-card-body">
-            <div class="wine-card-name">${escapeHtml(w.name || '(이름 없음)')}</div>
-            <div class="wine-card-date">${formatDateDot(w.date)}</div>
-            ${w.rating != null ? renderStars(w.rating) : ''}
-          </div>
-        </article>
-      `,
-        )
-        .join('')}
-    </div>
-  `;
+  gridEl.outerHTML = renderWineItems(wines);
   bindCardClicks();
 }
 
 function bindCardClicks(): void {
-  appEl.querySelectorAll<HTMLElement>('.wine-card').forEach((card) => {
+  appEl.querySelectorAll<HTMLElement>('.wine-card, .wine-list-item').forEach((card) => {
     card.addEventListener('click', () => {
       const id = card.dataset.id;
       if (id) {
