@@ -48,21 +48,23 @@ const appEl = document.getElementById('app')!;
 
 function navigate(route: Route, options?: { replace?: boolean }): void {
   state.route = route;
+  const payload = { route, viewMode: state.viewMode };
   if (options?.replace) {
-    history.replaceState({ route }, '');
+    history.replaceState(payload, '');
   } else {
-    history.pushState({ route }, '');
+    history.pushState(payload, '');
   }
-render();
+  render();
 }
 
 window.addEventListener('popstate', (e) => {
   if (state.lightboxUrl) {
     state.lightboxUrl = null;
   }
-  const nextRoute = (e.state as { route?: Route } | null)?.route;
-  state.route = nextRoute ?? { name: 'gallery' };
-render();
+  const hist = e.state as { route?: Route; viewMode?: 'grid' | 'list' } | null;
+  state.route = hist?.route ?? { name: 'gallery' };
+  state.viewMode = hist?.viewMode ?? 'grid';
+  render();
 });
 
 function escapeHtml(str: string): string {
@@ -268,8 +270,13 @@ function renderGallery(): void {
   }
 
   document.getElementById('toggle-view')?.addEventListener('click', () => {
-    state.viewMode = state.viewMode === 'grid' ? 'list' : 'grid';
-    render();
+    if (state.viewMode === 'grid') {
+      state.viewMode = 'list';
+      history.pushState({ route: state.route, viewMode: 'list' }, '');
+      render();
+    } else {
+      history.back();
+    }
   });
 
   document.getElementById('toggle-search')?.addEventListener('click', () => {
@@ -750,5 +757,5 @@ watchWines(
   },
 );
 
-history.replaceState({ route: state.route }, '');
+history.replaceState({ route: state.route, viewMode: state.viewMode }, '');
 render();
