@@ -44,6 +44,25 @@ const state: AppState = {
 
 const appEl = document.getElementById('app')!;
 
+function navigate(route: Route, options?: { replace?: boolean }): void {
+  state.route = route;
+  if (options?.replace) {
+    history.replaceState({ route }, '');
+  } else {
+    history.pushState({ route }, '');
+  }
+render();
+}
+
+window.addEventListener('popstate', (e) => {
+  if (state.lightboxUrl) {
+    state.lightboxUrl = null;
+  }
+  const nextRoute = (e.state as { route?: Route } | null)?.route;
+  state.route = nextRoute ?? { name: 'gallery' };
+render();
+});
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -127,8 +146,7 @@ function render(): void {
     lb.className = 'lightbox';
     lb.innerHTML = `<img src="${escapeHtml(state.lightboxUrl)}" alt="와인 라벨 확대" />`;
     lb.addEventListener('click', () => {
-      state.lightboxUrl = null;
-      render();
+      history.back();
     });
     appEl.appendChild(lb);
   }
@@ -219,19 +237,18 @@ function renderGallery(): void {
   document.getElementById('toggle-search')?.addEventListener('click', () => {
     state.isSearching = !state.isSearching;
     if (!state.isSearching) state.query = '';
-    render();
+  render();
   });
 
   document.getElementById('sort-select')?.addEventListener('change', (e) => {
     state.sort = (e.target as HTMLSelectElement).value as WineSort;
-    render();
+  render();
   });
 
   document.getElementById('fab-scan')?.addEventListener('click', () => {
     state.scanImage = null;
     state.isAnalyzing = false;
-    state.route = { name: 'scan' };
-    render();
+    navigate({ name: 'scan' });
   });
 
   bindCardClicks();
@@ -240,7 +257,7 @@ function renderGallery(): void {
 function renderGalleryGridOnly(): void {
   const gridEl = appEl.querySelector('.grid, .center-state');
   if (!gridEl) {
-    render();
+  render();
     return;
   }
   const wines = getFilteredWines();
@@ -280,8 +297,7 @@ function bindCardClicks(): void {
     card.addEventListener('click', () => {
       const id = card.dataset.id;
       if (id) {
-        state.route = { name: 'detail', wineId: id };
-        render();
+        navigate({ name: 'detail', wineId: id });
       }
     });
   });
@@ -343,15 +359,14 @@ function renderScan(): void {
   `;
 
   document.getElementById('back-btn')?.addEventListener('click', () => {
-    state.route = { name: 'gallery' };
-    render();
+    history.back();
   });
 
   const handleFile = async (file?: File) => {
     if (!file) return;
     try {
       state.scanImage = await resizeImageToJpeg(file);
-      render();
+    render();
     } catch (err) {
       showToast(err instanceof Error ? err.message : '이미지 처리에 실패했습니다.');
     }
@@ -370,28 +385,26 @@ function renderScan(): void {
   document.getElementById('analyze-btn')?.addEventListener('click', async () => {
     if (!state.scanImage) return;
     state.isAnalyzing = true;
-    render();
+  render();
     const info = await analyzeLabel(state.scanImage.base64);
     state.isAnalyzing = false;
     if (!info) {
       showToast('AI 분석에 실패했습니다. 직접 입력해주세요.');
     }
-    state.route = {
+    navigate({
       name: 'form',
       image: state.scanImage,
       info: info ?? emptyWineInfo(),
-    };
-    render();
+    });
   });
 
   document.getElementById('manual-btn')?.addEventListener('click', () => {
     if (!state.scanImage) return;
-    state.route = {
+    navigate({
       name: 'form',
       image: state.scanImage,
       info: emptyWineInfo(),
-    };
-    render();
+    });
   });
 }
 
@@ -538,12 +551,7 @@ function renderForm(route: Extract<Route, { name: 'form' }>): void {
   });
 
   document.getElementById('back-btn')?.addEventListener('click', () => {
-    if (existing) {
-      state.route = { name: 'detail', wineId: existing.id };
-    } else {
-      state.route = { name: 'scan' };
-    }
-    render();
+    history.back();
   });
 
   document.getElementById('wine-form')?.addEventListener('submit', async (e) => {
@@ -583,7 +591,7 @@ function renderForm(route: Extract<Route, { name: 'form' }>): void {
           rating,
         });
         showToast('와인 기록이 수정되었습니다 🍷');
-        state.route = { name: 'detail', wineId: existing.id };
+        history.back();
       } else {
         let imageUrl: string | undefined;
         if (route.image) {
@@ -603,9 +611,8 @@ function renderForm(route: Extract<Route, { name: 'form' }>): void {
           timestamp: new Date(),
         });
         showToast('와인이 기록되었습니다 🍷');
-        state.route = { name: 'gallery' };
+        history.go(-2);
       }
-      render();
     } catch (err) {
       saveBtn.disabled = false;
       saveBtn.textContent = isEdit ? '수정 완료' : '저장하기';
@@ -618,7 +625,7 @@ function renderDetail(wineId: string): void {
   const wine = state.wines.find((w) => w.id === wineId);
   if (!wine) {
     state.route = { name: 'gallery' };
-    render();
+  render();
     return;
   }
 
@@ -629,8 +636,8 @@ function renderDetail(wineId: string): void {
       <header class="topbar">
         <button id="back-btn" class="icon-btn" title="뒤로">←</button>
         <h1 class="topbar-title left">${escapeHtml(wine.name || '와인 상세')}</h1>
-        <button id="edit-btn" class="icon-btn" title="수정">✎</button>
-        <button id="delete-btn" class="icon-btn danger" title="삭제">🗑</button>
+        <button id="edit-btn" class="text-action-btn">수정</button>
+        <button id="delete-btn" class="text-action-btn danger">삭제</button>
       </header>
       ${
         wine.imageUrl
@@ -686,20 +693,19 @@ function renderDetail(wineId: string): void {
   `;
 
   document.getElementById('back-btn')?.addEventListener('click', () => {
-    state.route = { name: 'gallery' };
-    render();
+    history.back();
   });
 
   document.getElementById('hero-img')?.addEventListener('click', () => {
     if (wine.imageUrl) {
       state.lightboxUrl = wine.imageUrl;
-      render();
+      history.pushState({ route: state.route, lightbox: true }, '');
+    render();
     }
   });
 
   document.getElementById('edit-btn')?.addEventListener('click', () => {
-    state.route = { name: 'form', existing: wine };
-    render();
+    navigate({ name: 'form', existing: wine });
   });
 
   document.getElementById('delete-btn')?.addEventListener('click', async () => {
@@ -707,8 +713,7 @@ function renderDetail(wineId: string): void {
     try {
       await deleteWine(wine);
       showToast('삭제되었습니다.');
-      state.route = { name: 'gallery' };
-      render();
+      history.back();
     } catch (err) {
       showToast(`삭제 실패: ${err instanceof Error ? err.message : '오류'}`);
     }
@@ -721,13 +726,14 @@ watchWines(
     state.wines = wines;
     state.loading = false;
     state.error = null;
-    render();
+  render();
   },
   () => {
     state.loading = false;
     state.error = '와인 목록을 불러오지 못했습니다. 네트워크 연결을 확인해주세요.';
-    render();
+  render();
   },
 );
 
+history.replaceState({ route: state.route }, '');
 render();
